@@ -18,7 +18,10 @@ See
 
 
 # The repository 
-
+ 
+Let's quickly go through the key points of the repository 
+- The [service layer](https://github.com/petebids/todo-tx-outbox/blob/main/src/main/java/xyz/petebids/todotxoutbox/domain/service/TodoService.java)
+ This is where we combine our intent to save changes to an object, with our commitment to 
 
 
 
@@ -60,7 +63,9 @@ See
 
 # Ok - so how does it work ?
 
-Technically speaking - this is a producer instead of a polling producer given the use of the Postgres connector instead of a JDBC connector - while this is semantically correct, as a "black box"
+Technically speaking - this is a log tailing producer
+
+
 
 ## Transactional Guarantee
   
