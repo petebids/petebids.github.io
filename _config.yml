@@ -21,7 +21,7 @@
 title: Pete Bidstrup
 email: petebidstrup1988@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Staff Engineer @ Culture Amp , ex Five9 & Telstra. All opinions my own
+  Backend Engineer, interested in Databases, Message Queues, JVM, Golang & Rust. Staff Engineer @ Culture Amp , ex Five9 & Telstra. All opinions my own
 
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com

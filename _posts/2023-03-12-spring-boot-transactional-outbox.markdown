@@ -20,7 +20,52 @@ See
 # The repository 
  
 Let's quickly go through the key points of the solution 
-- The [service layer](https://github.com/petebids/todo-tx-outbox/blob/413475d1426a625d8c4ab43a9e162c144078fa35/src/main/java/xyz/petebids/todotxoutbox/domain/service/TodoService.java#L36)
+- The Service layer
+
+```java
+
+
+    @SneakyThrows
+    public Todo create(NewTodoCommand command) {
+
+        final Supplier<Todo> todoEntitySupplier = () -> {
+
+            final UserEntity creator = userRepository.findById(UUID.fromString(command.creator()))
+                    .orElseThrow(() -> new RuntimeException("user not found"));
+
+            final TodoEntity todo = new TodoEntity();
+
+            todo.setCreatedBy(creator);
+            todo.setDetails(command.details());
+            todo.setCompleted(false);
+
+            final TodoEntity saved = todoRepository.save(todo);
+
+            TodoEvent todoEvent = TodoEvent.newBuilder()
+                    .setComplete(saved.getCompleted())
+                    .setDetails(saved.getDetails())
+                    .setId(saved.getId().toString())
+                    .setEventType("CREATED")
+                    .build();
+
+
+            final byte[] bytes = serializer.serialize("outbox.event.TODO", todoEvent);
+
+            eventPublisher.publish(bytes,
+                    "TODO",
+                    "NEW_TODO",
+                    saved.getId().toString());
+
+
+            return todoMapper.convert(todo);
+
+        };
+
+        return transactionHelper.executeTx(todoEntitySupplier);
+    }
+```
+
+
  This is where we combine our intent to save changes to an object, with our commitment to 
 
 
