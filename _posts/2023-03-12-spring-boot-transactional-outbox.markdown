@@ -19,8 +19,8 @@ See
 
 # The repository 
  
-Let's quickly go through the key points of the repository 
-- The [service layer](https://github.com/petebids/todo-tx-outbox/blob/main/src/main/java/xyz/petebids/todotxoutbox/domain/service/TodoService.java)
+Let's quickly go through the key points of the solution 
+- The [service layer](https://github.com/petebids/todo-tx-outbox/blob/413475d1426a625d8c4ab43a9e162c144078fa35/src/main/java/xyz/petebids/todotxoutbox/domain/service/TodoService.java#L36)
  This is where we combine our intent to save changes to an object, with our commitment to 
 
 
@@ -74,7 +74,7 @@ Technically speaking - this is a log tailing producer
   
 ## Schema Evolution Guarantee
 
-
+- The [Kafka Avro serialization code that packs the schema id into the message](https://github.com/confluentinc/schema-registry/blob/75f323987274afc8844f47012bd83285e873414c/avro-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaAvroSerializer.java#L133)
 
 
 

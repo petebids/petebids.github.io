@@ -45,7 +45,7 @@ create table
     actual_start_time TIMESTAMP,
     actual_end_time TIMESTAMP,
     FOREIGN KEY (patient_id) references patients (id),
-    FOREIGN KEY (doctor_id) references doctors (id) on delete cascade
+    FOREIGN KEY (doctor_id) references doctors (id) on delete cascade -- TODO refactor this to a trigger to delete unbooked 
   );
 ```
 
@@ -60,6 +60,7 @@ create table
 
 
 # Let's talk to our product manager
+
 
 
 
