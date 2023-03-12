@@ -6,13 +6,18 @@ categories: spring boot, kafka, postgres
 ---
 # What is it?
 
-The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to thier usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store.
+The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to thier usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store. In this example, we will look at an example that uses a Spring Boot RESTful API, Postgress Database for storage, Kafka Connect for log tailing and Kafka as a distributed event log
+
 
 ![Diagram](/assets/transactional_outbox.png)
 
 See 
 - the [brilliant technology agnostic explination](https://microservices.io/patterns/data/transactional-outbox.html)  & from Chris Richardson 
 - fantastic [Quarkus Event Router implementation ](https://debezium.io/documentation/reference/stable/integrations/outbox.html) by Gunnar Morling
+- my [example implementation](https://github.com/petebids/todo-tx-outbox)
+
+
+# The repository 
 
 
 
