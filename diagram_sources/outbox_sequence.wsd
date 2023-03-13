@@ -1,15 +1,18 @@
 @startuml
 
-Actor user 
+Actor user
 
-box TodoDomain
+box TodoDomain #LightBlue
 participant "Todo Service"  as todo
 database "Todo DB" as tdb
 end box
 
-box DataPlatform
+box DataPlatform #LightGreen
+collections "Kafka Schema Registry" as ksc
 participant "Kafka Connect" as kc
+box kafkaCluster
 queue "Todo Events" as te
+end box
 end box
 
 
@@ -18,7 +21,16 @@ activate todo
 todo -> tdb : begin transaction
 activate tdb
 todo -> tdb : insert new todo
-todo -> tdb : insert todo event to outbox 
+todo -> todo : serialize avro event
+alt schema not cached?
+    activate ksc
+    todo -> ksc : get schema
+    ksc --> todo : schema
+    todo -> todo : cache schema
+    deactivate ksc
+end
+todo -> todo : serialize todo event as per schema registry
+todo -> tdb : insert todo event to outbox
 todo -> tdb : commit
 tdb -> todo : ok
 deactivate tdb
@@ -27,10 +39,10 @@ deactivate todo
 
 activate kc
 loop Outbox connector
-kc -> tdb : tail outbox wal
-tdb -> kc : new outbox event
-kc -> te : new todo event 
+    kc -> tdb : tail outbox wal
+    tdb -> kc : new outbox event
+    kc -> te : new todo event
 
-end loop
+    end loop
 
-@enduml
+    @enduml
