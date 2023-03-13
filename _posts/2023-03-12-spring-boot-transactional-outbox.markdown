@@ -144,18 +144,20 @@ Technically speaking - this is a log tailing producer
 
 
 
-## Transactional Guarantee
+
+# Transactional Guarantee
   
+
 
   
   
-## Schema Evolution Guarantee
+# Schema Evolution Guarantee
 
 - The [Kafka Avro serialization code that packs the schema id into the message](https://github.com/confluentinc/schema-registry/blob/75f323987274afc8844f47012bd83285e873414c/avro-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaAvroSerializer.java#L133)
 
 
 
-## Credit to
+# Credit to
 
 In tech, we stand on the shoulder of giants. A heartfelt thanks to the work of the following individuals for thier brilliant work than enabled this article.
 
