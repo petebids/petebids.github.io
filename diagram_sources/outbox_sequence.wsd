@@ -10,7 +10,7 @@ end box
 box "Kafka Platform"#LightGreen
 collections "Kafka Schema Registry" as ksc
 participant "Kafka Connect" as kc
-box kafkaCluster
+box kafkaCluster#LightGreen
 queue "Todo Events" as te
 end box
 end box
@@ -21,7 +21,6 @@ activate todo
 todo -> tdb : begin transaction
 activate tdb
 todo -> tdb : insert new todo
-todo -> todo : serialize avro event
 alt schema not cached?
     activate ksc
     todo -> ksc : get schema
@@ -41,6 +40,7 @@ activate kc
 loop Outbox connector
     kc -> tdb : tail outbox wal
     tdb -> kc : new outbox event
+    kc -> kc : apply EventRouter transformation
     kc -> te : new todo event
 
     end loop
