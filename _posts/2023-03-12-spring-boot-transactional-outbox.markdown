@@ -4,12 +4,16 @@ title:  "Spring Boot & the Transactional Outbox pattern"
 date:   2023-03-12 14:52:29 +1100
 categories: spring boot, kafka, postgres
 ---
+
+![Diagram](/assets/transactional_outbox.png)
+
 # What is it?
 
 The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to thier usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store. In this example, we will look at an example that uses a Spring Boot RESTful API, Postgress Database for storage, Kafka Connect for log tailing and Kafka as a distributed event log
 
 
-![Diagram](/assets/transactional_outbox.png)
+![Sequence](/assets/outbox_sequence.png)
+
 
 See 
 - the [brilliant technology agnostic explination](https://microservices.io/patterns/data/transactional-outbox.html)  & from Chris Richardson 
@@ -17,7 +21,7 @@ See
 - my [example implementation](https://github.com/petebids/todo-tx-outbox)
 
 
-# The repository 
+# The Implementation 
  
 Let's quickly go through the key points of the solution 
 - The Service layer
@@ -64,6 +68,28 @@ Let's quickly go through the key points of the solution
         return transactionHelper.executeTx(todoEntitySupplier);
     }
 ```
+- The Kafka connector
+```json
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "database.dbname": "todo",
+  "database.hostname": "db",
+  "database.password": "postgres",
+  "database.user": "postgres",
+  "key.converter.schema.registry.url": "http://redpanda:8081",
+  "key.convertor": "org.apache.kafka.connect.storage.StringConverter",
+  "name": "todo-outbox",
+  "plugin.name": "pgoutput",
+  "table.include.list": "public.outbox_entity",
+  "topic.prefix": "todo",
+  "transforms": "outbox",
+  "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+  "value.converter": "io.debezium.converters.BinaryDataConverter",
+  "value.converter.delegate.converter.type": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter.delegate.converter.type.schemas.enable": "false",
+  "value.converter.schema.registry.url": "http://redpanda:8081"
+}
+```
 
 
  This is where we combine our intent to save changes to an object, with our commitment to 
@@ -98,7 +124,7 @@ Let's quickly go through the key points of the solution
 - write to kafka only & do DB updates later
   - can't read you own writes
   - introduces complexity around consistency 
-- use Kafka connect directly on tables ? 
+- Get rid of the outbox table & use Kafka connect directly on tables ? 
   - lose the schema guarantees
 
 

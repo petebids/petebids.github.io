@@ -1,0 +1,36 @@
+@startuml
+
+Actor user 
+
+box TodoDomain
+participant "Todo Service"  as todo
+database "Todo DB" as tdb
+end box
+
+box DataPlatform
+participant "Kafka Connect" as kc
+queue "Todo Events" as te
+end box
+
+
+user -> todo : create new todo
+activate todo
+todo -> tdb : begin transaction
+activate tdb
+todo -> tdb : insert new todo
+todo -> tdb : insert todo event to outbox 
+todo -> tdb : commit
+tdb -> todo : ok
+deactivate tdb
+todo -> user : 201 CREATED
+deactivate todo
+
+activate kc
+loop Outbox connector
+kc -> tdb : tail outbox wal
+tdb -> kc : new outbox event
+kc -> te : new todo event 
+
+end loop
+
+@enduml
