@@ -7,7 +7,7 @@ participant "Todo Service"  as todo
 database "Todo DB" as tdb
 end box
 
-box DataPlatform #LightGreen
+box "Kafka Platform"#LightGreen
 collections "Kafka Schema Registry" as ksc
 participant "Kafka Connect" as kc
 box kafkaCluster
