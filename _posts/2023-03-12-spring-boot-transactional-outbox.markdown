@@ -8,14 +8,9 @@ categories: spring boot, kafka, postgres
 ![Diagram](/assets/transactional_outbox.png)
 
 
-# What is it?
+## What is it?
 
 The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to thier usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store. In this example, we will look at an example that uses a Spring Boot RESTful API, Postgress Database for storage, Kafka Connect for log tailing and Kafka as a distributed event log
-
-
-
-![Sequence](/assets/outbox_sequence.png)
-
 
 
 
@@ -25,10 +20,15 @@ See
 - my [example implementation](https://github.com/petebids/todo-tx-outbox)
 
 
-# The Implementation 
+## The Implementation 
  
+![Sequence](/assets/outbox_sequence.png)
+
 Let's quickly go through the key points of the solution 
-- The Service layer
+<br />
+
+# The Service layer
+<br />
 
 ```java
 
@@ -72,9 +72,70 @@ Let's quickly go through the key points of the solution
         return transactionHelper.executeTx(todoEntitySupplier);
     }
 ```
+<br />
+ This is where we combine our intent to save changes to an object, with our commitment to 
+
+<br />
+<br />
+# The event publisher
 
 
-- The Kafka connector
+<br />
+
+```java 
+@RequiredArgsConstructor
+@Component
+public class TransactionalOutboxEventPublisherImpl implements EventPublisher {
+
+    private final OutboxRepository outboxRepository;
+
+    @Override
+    public void publish(byte[] payload, String aggregateType, String eventName, String aggregateId) {
+
+        final OutboxEntity outboxEntity = new OutboxEntity();
+        outboxEntity.setAggregateId(aggregateId);
+
+        outboxEntity.setPayload(payload);
+        outboxEntity.setAggregateType(aggregateType);
+        outboxEntity.setType(eventName);
+
+        outboxRepository.save(outboxEntity);
+
+    }
+}
+```
+<br />
+
+This is where the magic happens. The event publisher just writes to a table! It gives the developer the sense of publishing an event, to allow for coherent, readable code! Should the develoepr care to understand how it is happening 
+<br />
+
+
+# The Outbox table
+
+<br />
+
+```sql
+create table outbox_entity
+(
+    id            uuid         not null
+        primary key,
+    aggregateid   varchar(255) not null,
+    aggregatetype varchar(255) not null,
+    payload       bytea,
+    type          varchar(255) not null
+);
+```
+
+<br />
+
+
+
+# The Kafka connector
+
+<br/>
+<br/>
+
+
 ```json
 {
   "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
@@ -98,11 +159,9 @@ Let's quickly go through the key points of the solution
 ```
 
 
- This is where we combine our intent to save changes to an object, with our commitment to 
 
-
-
-# When would I use this pattern?
+## When would I use this pattern?
+<br />
 - you want to publish events related to changes in data in your service
 - You want transactional guarantees* around internal stage changes & event publication
 - You want a runtime guarantee that your messages can be read by the consumer
@@ -110,10 +169,11 @@ Let's quickly go through the key points of the solution
 - Throughput from web request to Kafka is not the highest priority
 
 
+<br />
 
 
-
-# When should I not use this pattern? 
+## When should I not use this pattern? 
+<br />
 
 - In an application without a strong business layer, where lots of database writes happen in external processes
   - The idea here is we are providing events based on changes ! if we have untracked changes, we can't guarentee the publishing of changes
@@ -121,7 +181,7 @@ Let's quickly go through the key points of the solution
 
 
 
-# Why can't i just ... 
+## Why can't i just ... 
 
 - publish to kafka in a @Transactional method?
   - we have to use 2 phase commit
@@ -138,26 +198,26 @@ Let's quickly go through the key points of the solution
 
 
 
-# Ok - so how does it work ?
+## Ok - so how does it work ?
 
 Technically speaking - this is a log tailing producer
 
 
 
 
-# Transactional Guarantee
+## Transactional Guarantee
   
 
 
   
   
-# Schema Evolution Guarantee
+## Schema Evolution Guarantee
 
 - The [Kafka Avro serialization code that packs the schema id into the message](https://github.com/confluentinc/schema-registry/blob/75f323987274afc8844f47012bd83285e873414c/avro-serializer/src/main/java/io/confluent/kafka/serializers/AbstractKafkaAvroSerializer.java#L133)
 
 
 
-# Credit to
+## Credit to
 
 In tech, we stand on the shoulder of giants. A heartfelt thanks to the work of the following individuals for thier brilliant work than enabled this article.
 

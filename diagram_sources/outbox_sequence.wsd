@@ -10,9 +10,9 @@ end box
 box "Kafka Platform"#LightGreen
 collections "Kafka Schema Registry" as ksc
 participant "Kafka Connect" as kc
-box kafkaCluster#LightGreen
+
 queue "Todo Events" as te
-end box
+
 end box
 
 
