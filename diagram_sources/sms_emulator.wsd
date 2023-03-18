@@ -1,0 +1,31 @@
+@startuml
+
+title Production Components
+
+package CloudComponents {
+    [S3]
+    [DynamoDB]
+}
+
+package CompanyApis{
+    [Notification Api]
+    [MessageRouter]
+    [Allow and Deny Lists]
+
+}
+
+package MessagingSaas{
+    [SendSMSAPis]
+    [SMS Delivery Recipts]
+}
+
+[MessageRouter] --> [SendSMSAPis] 
+
+[Allow and Deny Lists] -> [DynamoDB]
+[Allow and Deny Lists] -> [MessageRouter]
+[MessageRouter] --> [S3]
+
+[SMS Delivery Recipts] -> [Notification Api]
+[Notification Api] -> [MessageRouter]
+
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+
+title Load test Components
+
+package CloudComponents {
+    [S3]
+    [DynamoDB]
+}
+
+package CompanyApis{
+    [Notification Api]
+    [MessageRouter]
+    [Allow and Deny Lists]
+
+}
+
+package EmualtedMessagingSaas #LightGreen{
+    [SendSMSAPEmulator]
+    [SMS Delivery Recipts Emulator ]
+}
+
+[MessageRouter] --> [SendSMSAPEmulator]
+
+[Allow and Deny Lists] -> [DynamoDB]
+[Allow and Deny Lists] -> [MessageRouter]
+[MessageRouter] --> [S3]
+
+[SMS Delivery Recipts Emulator ] -> [Notification Api]
+[Notification Api] -> [MessageRouter]
+
+@enduml
