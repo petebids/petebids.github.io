@@ -33,43 +33,41 @@ Let's quickly go through the key points of the solution
 ```java
 
 
+    @Override
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     @SneakyThrows
     public Todo create(NewTodoCommand command) {
 
-        final Supplier<Todo> todoEntitySupplier = () -> {
 
-            final UserEntity creator = userRepository.findById(UUID.fromString(command.creator()))
-                    .orElseThrow(() -> new RuntimeException("user not found"));
+        final UserEntity creator = userRepository.findById(UUID.fromString(command.creator()))
+                .orElseThrow(() -> new RuntimeException("user not found"));
 
-            final TodoEntity todo = new TodoEntity();
+        final TodoEntity todo = new TodoEntity();
 
-            todo.setCreatedBy(creator);
-            todo.setDetails(command.details());
-            todo.setCompleted(false);
+        todo.setCreatedBy(creator);
+        todo.setDetails(command.details());
+        todo.setCompleted(false);
 
-            final TodoEntity saved = todoRepository.save(todo);
+        final TodoEntity saved = todoRepository.save(todo);
 
-            TodoEvent todoEvent = TodoEvent.newBuilder()
-                    .setComplete(saved.getCompleted())
-                    .setDetails(saved.getDetails())
-                    .setId(saved.getId().toString())
-                    .setEventType("CREATED")
-                    .build();
+        TodoEvent todoEvent = TodoEvent.newBuilder()
+                .setComplete(saved.getCompleted())
+                .setDetails(saved.getDetails())
+                .setId(saved.getId().toString())
+                .setEventType(TODO_CREATED.name())
+                .build();
 
+        final byte[] bytes = serializer.serialize(TODO_TOPIC, todoEvent);
 
-            final byte[] bytes = serializer.serialize("outbox.event.TODO", todoEvent);
-
-            eventPublisher.publish(bytes,
-                    "TODO",
-                    "NEW_TODO",
-                    saved.getId().toString());
+        eventPublisher.publish(bytes,
+                TODO_AGGREGATE_TYPE,
+                TODO_CREATED.name(),
+                saved.getId().toString());
 
 
-            return todoMapper.convert(todo);
+        return todoMapper.convert(todo);
 
-        };
 
-        return transactionHelper.executeTx(todoEntitySupplier);
     }
 ```
 <br />
