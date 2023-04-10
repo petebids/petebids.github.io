@@ -129,4 +129,7 @@ In this example, our service depends on a database, keycloak, kafka, schema regi
 Using docker compose, it's trivial to spin up ephemeral copies of these services, to give each engineer a realistic local development environment.
 <script src="https://gist.github.com/petebids/80a62ec3e1f0f6533d468e4ea1bdfc02.js"></script>
 
-## 
+# Conclusion
+
+Thanks for reading, I hope you found this helpful.
+I'll be back with a part 2 to talk through Kafka, testing, JPA & some more detail on code structure. 
