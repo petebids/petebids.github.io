@@ -10,12 +10,12 @@ categories: spring boot, kafka, postgres
 
 ## What is it?
 
-The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to thier usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store. In this example, we will look at an example that uses a Spring Boot RESTful API, Postgress Database for storage, Kafka Connect for log tailing and Kafka as a distributed event log
+The transactional outbox is an abstract pattern whereby backend engineers write code that combines internal state changes & the intent to publish corresponding events in one database transaction. State changes will be persisted to their usual tables, & events to out outbox. Some other process then assumes responsibility for publishing the events from the outbox to the message store. In this example, we will look at an example that uses a Spring Boot RESTful API, Postgres Database for storage, Kafka Connect for log tailing and Kafka as a distributed event log
 
 
 
 See 
-- the [brilliant technology agnostic explination](https://microservices.io/patterns/data/transactional-outbox.html)  & from Chris Richardson 
+- the [brilliant technology-agnostic explanation](https://microservices.io/patterns/data/transactional-outbox.html)  & from Chris Richardson 
 - fantastic [Quarkus Event Router implementation ](https://debezium.io/documentation/reference/stable/integrations/outbox.html) by Gunnar Morling
 - my [example implementation](https://github.com/petebids/todo-tx-outbox)
 
@@ -104,7 +104,7 @@ public class TransactionalOutboxEventPublisherImpl implements EventPublisher {
 ```
 <br />
 
-This is where the magic happens. The event publisher just writes to a table! It gives the developer the sense of publishing an event, to allow for coherent, readable code! Should the develoepr care to understand how it is happening 
+This is where the magic happens. The event publisher just writes to a table! It gives the developer the sense of publishing an event, to allow for coherent, readable code! Should the developer care to understand how it is happening 
 <br />
 
 
@@ -174,7 +174,7 @@ create table outbox_entity
 <br />
 
 - In an application without a strong business layer, where lots of database writes happen in external processes
-  - The idea here is we are providing events based on changes ! if we have untracked changes, we can't guarentee the publishing of changes
+  - The idea here is we are providing events based on changes ! If we have low confidence in constraining mutations into our service class (for example in a monolith, or if we have manual processes for compliance that mutate the db directly) , we can't guarantee the publishing of changes
 - If you are using a database that doesn't support transactions across tables like GCP datastore or pre-accord Apache Cassandra; 
 
 
@@ -183,12 +183,13 @@ create table outbox_entity
 
 - publish to kafka in a @Transactional method?
   - we have to use 2 phase commit
-  - we introduce complexity into use of multiple transaction managers
-  - we have lowered our uptime - If Kafka is unvailable, so is our service
+  - we introduce complexity into use of multiple transaction managers - we should add assertions to our tests & qualifiers 
+  - we have lowered our uptime - If Kafka is unavailable, so is our service
 - write to kafka only & do DB updates later
-  - can't read you own writes
+  - You lead read you own writes
   - introduces complexity around consistency 
 - Get rid of the outbox table & use Kafka connect directly on tables ? 
+  - you can! cdc based publishing a completely valid pattern. It has different tradeoffs
   - lose the schema guarantees
 
 
@@ -217,7 +218,7 @@ Technically speaking - this is a log tailing producer
 
 ## Credit to
 
-In tech, we stand on the shoulder of giants. A heartfelt thanks to the work of the following individuals for thier brilliant work than enabled this article.
+In tech, we stand on the shoulder of giants. A heartfelt thanks to the work of the following individuals for their brilliant work than enabled this article.
 
  - Chris Richardson
  - Gunnar Morling

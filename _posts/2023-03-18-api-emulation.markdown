@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "API emulation, compatibility & re-implmentation - testing tools, compatibility layers, or a business model"
+title:  "API emulation, compatibility & re-implementation - testing tools, compatibility layers, or a business model"
 date:   2023-03-18 
 categories:  api, emulation, golang, Redpanda, Pulsar, 
 ---
@@ -12,47 +12,54 @@ As a Software Engineer, having the skill to emulate an existing API unlocks some
 
 In this article, I'll share a few examples from my experience 
 
-### On composability 
+### On composition 
 
 Software systems are frequently composed of other smaller systems.
 
-This idea of composability goes at least as far back as the UNIX pipe
+This idea of composition goes at least as far back as the UNIX pipe
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/bKzonnwoR2I" frameborder="0" ></iframe>
 
-Composability is the cornerstone of building modern backend services. When the business need arises for engieers build a backend system that
+Composition is the cornerstone of building modern backend services. When the business need arises for engieers build a backend system that
 
 - stores information
 - caches data for fast retrival
 - publishes events about state changes within the application
 
-It is exceedingly rare that any of the componenets are written from scratch, nor that they are deeply entangled with each other. Instead, this new service might be composed of
+It is exceedingly rare that any of the components are written from scratch, nor that they are deeply entangled with each other. Instead, this new service might be composed of
 
 - A backend web framework to build an API
 - A database to delegate storage to
-- A purpose built  cache like Redis
-- An Event Streaming platform like Kafka
+- A purpose built distributed cache for optimal performance
+- An Event publishing mechanism used to signal changes to the ecosystem outside the service
 
 and that 
 
-- the integration of the database & the api uses the JDBC API & the database dialect (e.g. Postgresql)
-- the redis integration depends on the Redis protocl
-- the event publishing mechanism depends on the Kafka protocl
+- the integration of the database & the api depends on a database protocol - Postgres, MySQL, DynamoDB etc 
+- the redis integration depends on the Redis protocol
+- the event publishing mechanism depends on a messaging protocol - kafka - rabbitmq, jms etc. 
 
-I'm sure the deatils of this are not necessarily new - What i'm hoping to convey is that whether you knew it or not :
-- you were already using composability, 
-- composability depends on api compatibility 
+I'm sure the details of this are not necessarily new - What I'm hoping to convey is that whether you knew it or not :
+- you were already using composition to build backend services
+- your comfort with composition extends as far as you have api compatibility - if you chose a particular set of apis, you do so knowing those APIs scale well enough for the foreseeable future, 
+
+<br />
 
 
 
 
 ### Use cases
 
-In  this section, I'll cover some of my experince as a Software Engineer for where I've seen API Emulation used, & the mechanism by which they are emulated
+In  this section, I'll cover some of my experience as a Software Engineer for where I've seen API Emulation used, & the mechanism by which they are emulated
+
+<br />
 
 #### GCP Emulators
 
 GCP provide a suite of emulators for thier stack, that give engineers the ability to run basic tests against an ephemeral container that implements the API - great for local development or CI/CD pipelines to give some basic confidence that your service continues to meet basic api & behaviour guidelines.
+
+<br />
+
 
 ##### How?
 Google's gRPC framework is used across a lot of these products. gRPC services are defined in protobuf idls
@@ -67,21 +74,27 @@ TDOD link to gist from zoomymq
 In a previous role, we composed a system from custom REST APIs we write, some serverless databases & message queues, and a  SaaS product that sent SMS. 
 
 ![Diagram](/assets/sms_emulator/sms_emulator.png)
-The SMS SaaS was critical to the infrastucture, but was quite expensive on a per request basis, & had real workd side effects that where not compatible with rapid experimentation. 
+<br />
 
-We wanted to run load/capacity/tests  against our rest apis & the cloud services we were using to prove thst our autoscaling rules worked & to validate our architecture, without incurring the costs of using the SaaS product.
 
-Unfortunatley, the SaaS product did not provide a test environment, not an open source tier. However, they did provide a strong API contract, meaning we had to write an emulator
+The SMS SaaS was critical to the infrastructure, but was quite expensive on a per-request basis, & had real world side effects that where not compatible with rapid experimentation. 
+
+We wanted to run load/capacity/tests  against our rest apis & the cloud services we were using to prove that our autoscaling rules worked & to validate our architecture, without incurring the costs of using the SaaS product.
+
+Unfortunately, the SaaS product did not provide a test environment, nor an open source tier. However, they did provide a strong API contract, meaning we had to write an emulator
+<br />
 
 ![Diagram](/assets/sms_emulator/sms_emulator_load_test/sms_emulator_load_test.png)
+<br />
 
 
-##### How?
+##### How did we do it?
 
-This one is actually relativley straightforward. Because the SaaS was REST based and published an Swagger defintion, we generated a new Spring project, added Swagger definitions, and had a project skeleton in minutes. Within a few days, we had fucntional emulator!
+This one is actually relatively straightforward. Because the SaaS was REST based and published a Swagger specification, we generated a new Spring project, added Swagger definitions, and had a project skeleton in minutes. Within a few days, we had functional emulator!
 
 Here's an example Using [Telstra's SMS Api](https://dev.telstra.com/content/messaging-api), Maven & spring boot
 
+![Diagram](/assets/openapicodegen.png)
 
 The Swagger spec
 ```yaml
@@ -172,6 +185,16 @@ public class MessagesApiImpl implements MessagesApi {
     ...
 }
 
+```
+
+The client applications when deployed to the load test environment simply used a different url 
+```java
+    @Bean
+    public com.telstra.ApiClient smsClient() {
+        com.telstra.ApiClient client = Configuration.getDefaultApiClient();
+        client.setBasePath("https://fake-emulator-host.com"); 
+        return client;
+    }
 ```
 
 
