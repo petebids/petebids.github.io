@@ -43,7 +43,7 @@ As such, when a new feature needs to be added, you will spend time drawing up th
 then codifying them into your service contracts. 
 
 The basic process flow is documented here, but for the sake of clarity within our example 
-[Diagram](/assets/todo_codegen.png)
+![Diagram](/assets/todo_codegen.png)
 
 The contract
 <script src="https://gist.github.com/petebids/91d3609f7ceb143ec98a479bb6e33614.js"></script>
@@ -91,11 +91,25 @@ src/main/java/xyz/petebids/todotxoutbox
 ```
 This structure borrows from domain driven design & the layered cake style, but I'll go over a few quick points
 
+![Diagram](/assets/layerd_packages.png)
+
 - The Application layer
   - The code in this layer is representative of the pieces of our application that are exposed to the outside world for our service to be invoked,
     in this case our REST API & Kafka Consumers
 - The Domain layer
+  - this covers your business logic - the core of the application
+- The Infrastructure layer 
+  - this covers the dependencies of the app, the things the application calls 
 
+and the following pattern should be followed
+
+- infra code should be used in the infra and domain layers
+- domain code should be used in the domain and application layers
+- infra code should not be used in the application layer
+
+
+This is contrary to the typical tutorial code that exposes JPA Entities over REST -
+allowing rapid refactoring via the separation of concerns & the S, I & D in [SOLID](https://en.wikipedia.org/wiki/SOLID)
 
 
 
