@@ -16,7 +16,7 @@ In this article, I'll make a lot of generalisations for the purpose of giving a 
 and refer to an example I've implemented on [GitHub](https://github.com/petebids/todo-tx-outbox). 
 
 My goal is that by the end of reading this article, folks who have worked through some 
-SpringBoot tutorials will have somme insight on the next steps of the self-guided learning
+SpringBoot tutorials will have some insight on the next steps of the self-guided learning
 
 
 
