@@ -214,12 +214,7 @@ This a relatively common theme in the intersection of tech & human behaviour
                 .mockTopic(() -> orders.pop().customerId().toString(), 10, 1_000_000);
 
         Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
-
-        //{0=70291, 1=130089, 2=80153, 3=39853, 4=69583, 5=150634, 6=180126, 7=69353, 8=70051, 9=139867}
-
-        for(Map.Entry<Integer, Integer> entry : summary.entrySet()){
-            System.out.println(entry.getKey() + "," + entry.getValue());
-        }
+        
 
         assertThat(summary.get(0), allOf(greaterThan(70_000), lessThan(80_000)));
         assertThat(summary.get(1), allOf(greaterThan(130_000), lessThan(140_000)));
@@ -265,10 +260,7 @@ assuming that - on average,orders go through a normal lifecycle, & produce a nor
         Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
 
 
-
-        for(Map.Entry<Integer, Integer> entry : summary.entrySet()){
-        System.out.println(entry.getKey() + "," + entry.getValue());
-        }
+        
 
         assertThat(summary.get(0), allOf(greaterThan(99_000), lessThan(101_000)));
         assertThat(summary.get(1), allOf(greaterThan(99_000), lessThan(101_000)));
