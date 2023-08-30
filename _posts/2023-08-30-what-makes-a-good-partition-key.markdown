@@ -138,7 +138,7 @@ great - we've found a stable key - right ?
 
 ```
 
-[!Diagram](/assets/partition_by_order.png)
+![Diagram](/assets/partition_by_order.png)
 
 Well yes we have - but not a good one for the purpose of evenly distributing load!
 
@@ -155,7 +155,7 @@ this might work really well if your customer's behaviour has a normal distributi
 In this example I've weighted customer's ordering behaviour to be a bit biased - not every customer places the same amount of orders
 
 
-[!Diagram](/assets/partition_by_order.png)
+![Diagram](/assets/partition_by_order.png)
 
 
 
@@ -169,7 +169,7 @@ assuming that - on average, orders go through a normal lifecycle,  & produce a n
 
 
 
-[!Diagram](/assets/partition_by_order.png)
+![Diagram](/assets/partition_by_order.png)
 
 
 
