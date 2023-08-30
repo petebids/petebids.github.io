@@ -57,10 +57,20 @@ Ideally orders would arrive in the order that they happen, but let's assume our 
 so we can compromise on limited ordering guarantee - updates for any given order will arrive in order, relative to other updates for the same order
 this means we won't tell a customer that their order has shipped after it's been delivered
 
-TODO doc order state machine 
 
 
-## Ok - I think I;ve picked a good key - how do I test it ?
+## Ok - I think I've picked a good key - how do I test it ?
+
+You could of course just go ahead and publish directly to Kafka & see the results. 
+
+For a meaningfully sized data set, this might take hours or days - not mention the fact you have to get your publishing code in a decent state.
+
+One option I've developed this year is the following mechanism of left-shifting partition distribution - if you find a partition key is unsuitable, you can pivot early, 
+
+First of all - we find out how Kafka Calculates partitions by key
+
+https://github.com/apache/kafka/blob/660e6fe8108e8a9b3481ea1ec20327a099dd8310/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java#L1403
+
 
 Fundamentally - we can think of a Kafka topic as a two-dimensional array
 the outer arraylist contain the partitions, and the partitions contain the messages
@@ -99,16 +109,44 @@ public class MockKafkaTopic {
 }
 
 ```
+And then some code to generate a Mock topic
+
+```java
+public class MockTopicGenerator {
+    
+    public static MockKafkaTopic mockTopic(Supplier<String> partitionKeySupplier, int partitionCount, int iterations) {
+
+        MockKafkaTopic mockKafkaTopic = new MockKafkaTopic(partitionCount);
+
+        IntStream.range(0, iterations )
+                .forEach(unused -> {
+                    String partitionKey = partitionKeySupplier.get();
+                    int i = BuiltInPartitioner.partitionForKey(partitionKey.getBytes(StandardCharsets.UTF_8), partitionCount);
+                    mockKafkaTopic.publishToPartition(i, partitionKey);
+                });
+
+        return mockKafkaTopic;
+    }
+
+}
+
+```
+
+From here, we need realistic inputs. For a production system already running that it about to start publishing data, we don't need to mock - the `partitionKeySupplier`
+should source real data from production. If we don't have a realistic dataset to use, we can brainstorm with a product manager about how we expect the system to be used, & produce some mock data as I've done throughout the repository
+
 
 
 ### A poor choice - order type
 if we assume that orders cant change type, from Pickup to Delivery - then
  - an order of a type t will always return hash h / partition count pc which will always equal partition p 
 
-great - we've found a stable key - right ? 
+great - we've found a stable key - all future versions of the same order will land on the same partition. 
+
+Let's see how this pans out 
 
 ```java
-@DisplayName("A poor choice of partition key")
+    @DisplayName("A poor choice of partition key")
     @Test
     void poorPartitionKey() {
 
@@ -146,14 +184,56 @@ There are only two states - meaning only two partitions receive messages. This i
 
 
 
-### a Better choice - customer id 
+### A Better choice - customer id 
 
 
 
-this might work really well if your customer's behaviour has a normal distribution.  
+This might work really well if your customer's behaviour has a normal distribution.  
 
 In this example I've weighted customer's ordering behaviour to be a bit biased - not every customer places the same amount of orders
 
+This a relatively common theme in the intersection of tech & human behaviour 
+
+- population isn't normally distributed between countries
+- employees aren't  between companies
+- 
+
+
+```java
+
+
+    @DisplayName("A slightly improved partition key")
+    @Test
+    void slightImprovement() {
+
+        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+
+        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+
+        MockKafkaTopic mockKafkaTopic = MockTopicGenerator
+                .mockTopic(() -> orders.pop().customerId().toString(), 10, 1_000_000);
+
+        Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
+
+        //{0=70291, 1=130089, 2=80153, 3=39853, 4=69583, 5=150634, 6=180126, 7=69353, 8=70051, 9=139867}
+
+        for(Map.Entry<Integer, Integer> entry : summary.entrySet()){
+            System.out.println(entry.getKey() + "," + entry.getValue());
+        }
+
+        assertThat(summary.get(0), allOf(greaterThan(70_000), lessThan(80_000)));
+        assertThat(summary.get(1), allOf(greaterThan(130_000), lessThan(140_000)));
+        assertThat(summary.get(2), allOf(greaterThan(70_000), lessThan(80_000)));
+        assertThat(summary.get(3), allOf(greaterThan(30_000), lessThan(40_000)));
+        assertThat(summary.get(4), allOf(greaterThan(60_000), lessThan(80_000)));
+        assertThat(summary.get(5), allOf(greaterThan(130_000), lessThan(180_000)));
+        assertThat(summary.get(6), allOf(greaterThan(150_000), lessThan(200_000)));
+        assertThat(summary.get(7), allOf(greaterThan(55_000), lessThan(85_000)));
+        assertThat(summary.get(8), allOf(greaterThan(70_000), lessThan(80_000)));
+        assertThat(summary.get(9), allOf(greaterThan(130_000), lessThan(140_000)));
+
+
+```
 
 ![Diagram](/assets/partition_by_customer.png)
 
@@ -161,12 +241,49 @@ In this example I've weighted customer's ordering behaviour to be a bit biased -
 
 ### An ideal choice 
 
-in the aggregate, V4 UUIDs are truly random
+So even with a randomly generated Customer id - we still ended up with skewed partitions 
 
-that means, we don't need to take into account the other biases in our system - the skew towards Pickup or delivery orders, or the fact some customers might be more active than others
+That means, we don't need to take into account the other biases in our system - the skew towards Pickup or delivery orders, or the fact some customers might be more active than others
  
-assuming that - on average, orders go through a normal lifecycle,  & produce a normal 
+assuming that - on average,orders go through a normal lifecycle, & produce a normal amount of state changes 
 
+
+```java
+
+@DisplayName("An ideal partition Key")
+@Test
+    void idealKey() {
+
+
+        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+
+        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+
+        MockKafkaTopic mockKafkaTopic = MockTopicGenerator
+        .mockTopic(() -> orders.pop().orderId().toString(), 10, 1_000_000);
+
+        Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
+
+
+
+        for(Map.Entry<Integer, Integer> entry : summary.entrySet()){
+        System.out.println(entry.getKey() + "," + entry.getValue());
+        }
+
+        assertThat(summary.get(0), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(1), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(2), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(3), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(4), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(5), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(6), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(7), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(8), allOf(greaterThan(99_000), lessThan(101_000)));
+        assertThat(summary.get(9), allOf(greaterThan(99_000), lessThan(101_000)));
+
+        }
+
+```
 
 
 ![Diagram](/assets/partition_by_order.png)
