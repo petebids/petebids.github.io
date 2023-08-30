@@ -8,17 +8,18 @@ categories:  Distributed Systems, Kafka, Partitioning
 ## Abstract
 
 In this article, I'll walk through one of the building blocks of the design & development of a highly performant event stream on Apache Kafka. 
-I'll skip details around event design, log compaction, data serialisation, security, & schema evolution,
-so we can deep dive into the process for selecting a partition strategy, a partition or message key, and then verifying that your choice has the expected distribution
+I'll skip details around event design, dead-letter queues, log compaction, data serialisation, security, & schema evolution that would 
+all work in conjunction with this choice in a production system,
+so we can deep dive into the process for selecting a partition strategy, a partition or message key, and then verifying that your choice has the expected distribution.
 
 ## Understanding topic partitions in Kafka
 
 
 ![Diagram](/assets/topic.png)
 
-The key to understanding topic partitions in Kafka is the idea that they are logically contiguous, but physically separate
+The key to understanding topic partitions in Kafka is the idea that they are logically contiguous, but physically separate.
 
-What this means is that if we have a topic of Orders - each partition contains a non-overlapping subset of orders 
+What this means is that if we have a topic of Orders  - each partition contains a non-overlapping subset of orders 
 
 These partitions will be seperated across different brokers in a Kafka cluster. These partitions form the unit of concurrency - the more partitions, the more consumers we can attach,
 & the greater throughput our system can achieve - **assuming an even distribution**
@@ -31,13 +32,15 @@ Under the hood, the kafka protocol will ensure ordered delivery within those par
 
 
 So the benefit of partitions is that they are physically separate - meaning less resource contention, higher rates of parallelization
-The cost is that there is no coordination of data between them - meaning no guarantee of ordering <b>across</b> partitions - only <b>within</b> them! 
+The cost is that there is no coordination of data between them - meaning no guarantee of ordering <b>across</b> partitions - only <b>within</b> them. 
+
+This means that a partition is a hard boundary on the ordered delivery guarantee Kafka provides.
 
 ## Our imaginary scenario
 
-Let's just say we are some kind of ecommerce system that takes orders from customers
-When an order goes through its lifecycle, the status changes, & an event is emitted via Kafka
-The comms system subscribes to these events, & sends customers emails 
+Let's just say we are some kind of ecommerce system that takes orders from customers.
+When an order goes through its lifecycle, the status changes, & an event is emitted via Kafka.
+The comms system subscribes to these events, & sends customers emails.
 
 ![Diagram](/assets/arch.png)
 
@@ -58,7 +61,7 @@ In our over simplified scenario, lets assume orders can change state in the foll
 
 Let's just say in our scenario, the design choice is made that the comms engine shouldn't need to know about the cause & effect relationship between our events - it should just be able to process them in order & turn them into emails.
 
-Let's also rule out two other options for the purpose of this discussion
+Let's also rule out two other options for the purpose of this discussion. 
 
 - Lamport or Vector clocks - a logical clock that expresses to a consumer that event a happens before event b, without relying on the transport mechanism to keep messages. 
   - while this is a brilliant option to increase scalability & distribution of data, it forces consumers to implement the event buffer pattern, where if event b arrives before event a, they have to hold & process b until a arrives.
