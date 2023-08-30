@@ -11,10 +11,12 @@ categories:  Spring Boot , SaaS , Enterprise Software
 A frequent ask from younger developers & college students on [r/SpringBoot](https://www.reddit.com/r/SpringBoot/) goes along the lines of
 "I've done xyz tutorials, what does a  *real* Spring Boot application look like ? "
 
+Or, newer engineers joining an enterprise might ask - why is this the way it is? 
+
 
 Having built enterprise applications in SpringBoot since 2017, I'll share some insights to hopefully fill in some blanks. 
 In this article, I'll make a lot of generalisations for the purpose of giving a single coherent idea,
-and refer to an example I've implemented on [GitHub](https://github.com/petebids/todo-tx-outbox). 
+and refer to an example I've implemented on [GitHub](https://github.com/petebids/todo-tx-outbox). Note that this piece of code is far from perfect, & only exists to give an idea of what an enterprise grade app might look like.
 
 My goal is that by the end of reading this article, folks who have worked through some 
 SpringBoot tutorials will have some insight on the next steps of the self-guided learning
@@ -25,7 +27,9 @@ SpringBoot tutorials will have some insight on the next steps of the self-guided
 
 Generally speaking, new applications are built in a microservices style, & implement the [Resource server](https://www.rfc-editor.org/rfc/rfc6749#section-1.1) pattern.
 What this means is that a central team builds and or runs some SaaS or a custom implementation of the OIDC protocol that plays the role of the authorization server. 
-When you start building a new service, you add the resource server dependency (or some internal library that performs the same purpose) & apply some minimal configuration - 
+When you start building a new service, you add the resource server dependency (or some internal library that performs the same purpose) & apply some minimal configuration
+
+![Diagram](/assets/Authz_server.png)
 
 <script src="https://gist.github.com/petebids/cdbec8953b054688c67cf76730635665.js"></script>
 
@@ -38,9 +42,8 @@ When you start building a new service, you add the resource server dependency (o
 
 Generally, when you are building an API in an enterprise environment, you are not the only party interested in your api contract.
 Frontend engineers, Product managers & Architects will all be a part of the outer design of your service.
-Generally, enterprises favour contract first development for the [reasons covered here](https://medium.com/commencis/contract-first-api-development-with-openapi-generator-and-connexion-b21bbf2f9244) by Anil
-As such, when a new feature needs to be added, you will spend time drawing up the interactions on a whiteboard,
-then codifying them into your service contracts. 
+As such, when a new feature needs to be added, you will spend time drawing up the interactions on a whiteboard or a design tool , then codifying them into your service contracts. 
+Once everyone agrees on the contract, you can all go off & undertake parallel development
 
 The basic process flow is documented here, but for the sake of clarity within our example 
 ![Diagram](/assets/todo_codegen.png)
@@ -114,7 +117,7 @@ allowing rapid refactoring via the separation of concerns & the S, I & D in [SOL
 ## 12 Factor apps
 
 The 12 factor principles are a standard for building backend applications for the modern web. It's important to [read and understand](https://12factor.net/) 
-why in the abstract before trying ti implement these practices in your spring application.
+why in the abstract before trying to implement these practices in your spring application.
 
 
 # We don't use the @Scheduled annotation

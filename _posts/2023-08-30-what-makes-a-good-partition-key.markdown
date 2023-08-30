@@ -13,6 +13,9 @@ so we can deep dive into the process for selecting a partition strategy, a parti
 
 ## Understanding topic partitions in Kafka
 
+
+![Diagram](/assets/topic.png)
+
 The key to understanding topic partitions in Kafka is the idea that they are logically contiguous, but physically separate
 
 What this means is that if we have a topic of Orders - each partition contains a non-overlapping subset of orders 
@@ -47,8 +50,8 @@ ok - You still want to use kafka ordering ?  what are the acceptable bounds of o
 
 ## Ok - I think I;ve picked a good key - how do I test it ? 
 
-Fundamentally - we can think of a Kafka topic as a two-dimensional list 
- the outer list contain the partitions, and the partitions contain the messages
+Fundamentally - we can think of a Kafka topic as a two-dimensional array 
+ the outer arraylist contain the partitions, and the partitions contain the messages
 
 So a reasonable Mock for testing purposes is 
 ```java
