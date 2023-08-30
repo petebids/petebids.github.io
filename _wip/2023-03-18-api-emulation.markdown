@@ -8,7 +8,8 @@ categories:  api, emulation, golang, Redpanda, Pulsar,
 ## Abstract
 
 Strong API Boundaries are fundamental to building & evolving software with confidence & stability. 
-As a Software Engineer, having the skill to emulate an existing API unlocks some powerful testing & development techniques. Being able to analyse API compatible products is key to being able to make technical decisions on choosing cloud & SaaS providers
+As a Software Engineer, having the skill to emulate an existing API unlocks some powerful testing & development techniques. 
+As a Tech Lead Or Architect, being able to analyse API compatible products is key to being able to make technical decisions on choosing cloud & SaaS providers
 
 In this article, I'll share a few examples from my experience 
 
@@ -50,21 +51,20 @@ I'm sure the details of this are not necessarily new - What I'm hoping to convey
 
 ### Use cases
 
-In  this section, I'll cover some of my experience as a Software Engineer for where I've seen API Emulation used, & the mechanism by which they are emulated
+In  this section, I'll cover some of my experience as a Software Engineer for where I've seen API Emulation used, &  deep-dive into the mechanism by which they are emulated
 
 <br />
 
-#### GCP Emulators
+#### Local Development using Cloud Emulators
 
-GCP provide a suite of emulators for thier stack, that give engineers the ability to run basic tests against an ephemeral container that implements the API - great for local development or CI/CD pipelines to give some basic confidence that your service continues to meet basic api & behaviour guidelines.
+GCP provide a suite of emulators for their stack, that give engineers the ability to run basic tests against an ephemeral container that implements the API - great for local development or CI/CD pipelines to give some basic confidence that your service continues to meet basic api & behaviour guidelines.
 
 <br />
 
 
 ##### How?
 Google's gRPC framework is used across a lot of these products. gRPC services are defined in protobuf idls
-Generating a server definition is trivial in the supported languages 
-TODO generated server stubs
+Generating a server definition is trivial, but Google go as far as to publish the 
 
 
 TDOD link to gist from zoomymq 
@@ -202,14 +202,14 @@ The client applications when deployed to the load test environment simply used a
 #### For profit! 
 
 ##### Redpanda 
-Redpanda are a company that built and support the Redpanda message broker, a c++ Apache Kafka compatible message broker. 
+Redpanda are a company that built and support the Redpanda message broker, a drop in replacement for Apache Kafka. 
 The business proposal of Redpanda is pretty simple - cheap/fast/stable Kafka. With no JVM, no garbage collection !  
 
 ###### How ?
 
 Not quite as easy as the gRPC & OpenAPi mechnaisms! 
 
-Redpanda re implmemented the [kafka binray protocol](https://kafka.apache.org/protocol#:~:text=Kafka%20uses%20a%20binary%20protocol,of%20the%20following%20primitive%20types.)
+Redpanda re implemented the [kafka binray protocol](https://kafka.apache.org/protocol#:~:text=Kafka%20uses%20a%20binary%20protocol,of%20the%20following%20primitive%20types.)
 
 
 
@@ -230,17 +230,11 @@ Could be [Foreign Data Warppers](https://wiki.postgresql.org/wiki/Foreign_data_w
 
 #### Microservice decomposition , Strangler Fig
 
+A common project in modern software engineering is to break down server side applications into smaller applications, or microservices. 
+This has a range of benefits, from keeping team size & cognitive load lower, to enabling more effective scaling of the application to meet demand
 
 
 
-#### Opaque Deprecation
-
-This is the least interesting but possibly the most liberating of all the examples I've seen. This focuses on the idea of data liberation. 
-
-Imagine a crusty old SOAP API that had consumers that are not ready to move away from. Data is Authored in that system via th SOAP API is used throughout A monolithic application
-
-
-Step one
 
 
 
