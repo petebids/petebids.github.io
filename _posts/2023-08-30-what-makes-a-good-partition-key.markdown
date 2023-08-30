@@ -219,9 +219,8 @@ In this example I've weighted customer's ordering behaviour to be a bit biased -
     @Test
     void slightImprovement() {
 
-            MockOrderFactory mockOrderFactory = getMockOrderFactory();
-
-            Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
 
         MockKafkaTopic mockKafkaTopic = MockTopicGenerator
         .mockTopic(() -> orders.pop().customerId().toString(), 10, 1_000_000);
