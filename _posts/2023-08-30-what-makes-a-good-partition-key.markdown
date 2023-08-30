@@ -295,6 +295,27 @@ assuming that - on average,orders go through a normal lifecycle, & produce a nor
 ![Diagram](/assets/partition_by_order.png)
 
 
+# Tying it all together - Which tradeoff is right for us?
+
+Let's assume we can rule out partitioning by type & status - status wouldn't guarantee ordering at all, ordering by type wouldn't make effective use of partitions
+
+That leaves us with ordering by customer id, or order id
+
+If we partition by customer id 
+
+- we won't get an optimally even distribution
+- If customers have multiple orders in flight, every update they get will be in perfect order 
+
+
+If we partition by order id
+
+- We are more likely to end up with an even distribution over time
+- If customers have multiple orders in flight, they might receive notifications for **separate** orders,  out of order
+
+This sounds like something we might want to guard against, but equally this could be something outside the scope of our system - 
+we might not have a guarantee from our suppliers that orders for different products will be filled sequentially.
+
+In that case, we don't lose anything by partitioning on the order id. 
 
 
 
@@ -306,7 +327,8 @@ In this article, we've taken one path down a decision tree for a distributed arc
 In reality, a lot of the assumptions we've made today are worth being challenged - opening up different possibilities.
 
 I hope you've gained an appreciation for the technical challenges that go into leveraging the power of a distributed system like Kafka, 
-while maintaining a balance between competing business & technical requirements. 
+while maintaining a balance between competing business & technical requirements, as well as an appreciation for seemingly minor semantic differences
+that can manifest as technical debt over time.
 
 I've included some rough [source code](https://github.com/petebids/kafka-partition-test/tree/main) that made up the bulk of this article to help get you started, 
 should you want to apply the shift left method of testing partition strategies.
