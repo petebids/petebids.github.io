@@ -26,10 +26,14 @@ SpringBoot tutorials will have some insight on the next steps of the self-guided
 ## Security
 
 Generally speaking, new applications are built in a microservices style, & implement the [Resource server](https://www.rfc-editor.org/rfc/rfc6749#section-1.1) pattern.
+
+![Diagram](/assets/Authz_server.png)
+
+
 What this means is that a central team builds and or runs some SaaS or a custom implementation of the OIDC protocol that plays the role of the authorization server. 
 When you start building a new service, you add the resource server dependency (or some internal library that performs the same purpose) & apply some minimal configuration
 
-![Diagram](/assets/Authz_server.png)
+
 
 <script src="https://gist.github.com/petebids/cdbec8953b054688c67cf76730635665.js"></script>
 
