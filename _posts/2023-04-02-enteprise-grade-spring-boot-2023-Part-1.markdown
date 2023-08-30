@@ -27,11 +27,12 @@ SpringBoot tutorials will have some insight on the next steps of the self-guided
 
 Generally speaking, new applications are built in a microservices style, & implement the [Resource server](https://www.rfc-editor.org/rfc/rfc6749#section-1.1) pattern.
 
-![Diagram](/assets/Authz_server.png)
+![Diagram](/assets/authn.png)
 
 
 What this means is that a central team builds and or runs some SaaS or a custom implementation of the OIDC protocol that plays the role of the authorization server. 
-When you start building a new service, you add the resource server dependency (or some internal library that performs the same purpose) & apply some minimal configuration
+When you start building a new service, you add the resource server dependency (or some internal library that performs the same purpose) & apply some minimal configuration - you generally don't have to model the concept of users, & supply login endpoints yourself in a microservices architecture
+
 
 
 
@@ -47,7 +48,7 @@ When you start building a new service, you add the resource server dependency (o
 Generally, when you are building an API in an enterprise environment, you are not the only party interested in your api contract.
 Frontend engineers, Product managers & Architects will all be a part of the outer design of your service.
 As such, when a new feature needs to be added, you will spend time drawing up the interactions on a whiteboard or a design tool , then codifying them into your service contracts. 
-Once everyone agrees on the contract, you can all go off & undertake parallel development
+Once everyone agrees on the contract, you can all go off & undertake parallel development - you build your api, while other teams mock your api & build their integration
 
 The basic process flow is documented here, but for the sake of clarity within our example 
 ![Diagram](/assets/todo_codegen.png)
