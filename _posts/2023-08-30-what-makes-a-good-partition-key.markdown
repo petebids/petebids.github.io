@@ -302,10 +302,18 @@ assuming that - on average,orders go through a normal lifecycle, & produce a nor
 
 
 Thanks for getting this far
-In this article, I hope you've gained an appreciation for the technical challenges that go into leveraging the power of a distributed system like Kafka, 
+In this article, we've taken one path down a decision tree for a distributed architecture & looked at how it can be optimised.
+In reality, a lot of the assumptions we've made today are worth being challenged - opening up different possibilities.
+
+I hope you've gained an appreciation for the technical challenges that go into leveraging the power of a distributed system like Kafka, 
 while maintaining a balance between competing business & technical requirements. 
 
-I've included some rough [source code](https://github.com/petebids/kafka-partition-test/tree/main) that made up the bulk of this article to help get you started 
+I've included some rough [source code](https://github.com/petebids/kafka-partition-test/tree/main) that made up the bulk of this article to help get you started, 
+should you want to apply the shift left method of testing partition strategies.
+
+Thanks for reading!
+
+
 
 
 
