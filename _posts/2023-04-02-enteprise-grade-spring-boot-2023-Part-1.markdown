@@ -13,7 +13,6 @@ A frequent ask from younger developers & college students on [r/SpringBoot](http
 
 Or, newer engineers joining an enterprise might ask - why is this the way it is? 
 
-
 Having built enterprise applications in SpringBoot since 2017, I'll share some insights to hopefully fill in some blanks. 
 In this article, I'll make a lot of generalisations for the purpose of giving a single coherent idea,
 and refer to an example I've implemented on [GitHub](https://github.com/petebids/todo-tx-outbox). Note that this piece of code is far from perfect, & only exists to give an idea of what an enterprise grade app might look like.
@@ -25,7 +24,7 @@ SpringBoot tutorials will have some insight on the next steps of the self-guided
 
 ## Security
 
-Generally speaking, new applications are built in a microservices style, & implement the [Resource server](https://www.rfc-editor.org/rfc/rfc6749#section-1.1) pattern.
+Generally speaking, new enterprise applications are built in a microservices style, & implement the [Resource server](https://www.rfc-editor.org/rfc/rfc6749#section-1.1) pattern.
 
 ![Diagram](/assets/authn.png)
 

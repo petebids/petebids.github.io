@@ -47,6 +47,7 @@ TODO doc
 This is a fundamental property of any event stream - how does order of events factor into the way consumers will read them ? 
 This is a great time to remember that just because a message queue or streaming technology offers a feature, doesn't mean you should use it! 
 
+As an example, if you were building something that aggregated application logs, & absolute order was never a requirement
 Consider Lamport or Vector clocks - the ordering can be embedded into the message
 Consumers can buffer for the next event, due to the specific happens after semantics
 
@@ -59,44 +60,10 @@ this means we won't tell a customer that their order has shipped after it's been
 TODO doc order state machine 
 
 
-### a poor choice - order type
-if we assume that orders cant change type, from Pickup to Delivery - then
- - an order of a type t will always return hash h / partition count pc which will always equal partition p 
+## Ok - I think I;ve picked a good key - how do I test it ?
 
-great - we've found a stable key - right ? 
-
-TODO doc
-
-
-Well yes we have - but not a good one for the purpose of evenly distributing load
-
-there are only two states - 
-
-
-
-
-### a Better choice - customer id 
-
-
-
-this might work really well if your customer's behaviour has a normal distribution.  
-
-In this example I've weighted customer's ordering behaviour to be a bit biased 
-
-
-### An ideal choice 
-
-in the aggregate, V4 UUIDs are truly random
-
-that means, we don't need to take into account the other biases in our system - the skew towards Pickup or delivery orders, or the fact some customers might be more active than others
- 
-assuming that - on average, orders go through a normal lifecycle,  & produce a normal 
-
-
-## Ok - I think I;ve picked a good key - how do I test it ? 
-
-Fundamentally - we can think of a Kafka topic as a two-dimensional array 
- the outer arraylist contain the partitions, and the partitions contain the messages
+Fundamentally - we can think of a Kafka topic as a two-dimensional array
+the outer arraylist contain the partitions, and the partitions contain the messages
 
 So a reasonable Mock for testing purposes is
 ```java
@@ -134,18 +101,82 @@ public class MockKafkaTopic {
 ```
 
 
+### A poor choice - order type
+if we assume that orders cant change type, from Pickup to Delivery - then
+ - an order of a type t will always return hash h / partition count pc which will always equal partition p 
+
+great - we've found a stable key - right ? 
+
+```java
+@DisplayName("A poor choice of partition key")
+    @Test
+    void poorPartitionKey() {
+
+        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+
+        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+
+        MockKafkaTopic mockKafkaTopic = MockTopicGenerator
+                .mockTopic(() -> orders.pop().type().toString(), 10, 1_000_000);
+
+        Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
+
+
+        assertEquals(summary.get(0), 0);
+        assertEquals(summary.get(1), 0);
+        assertEquals(summary.get(2), 0);
+        assertEquals(summary.get(3), 0);
+        assertEquals(summary.get(4), 0);
+        assertEquals(summary.get(5), 0);
+        assertThat(summary.get(6), allOf(greaterThan(200_000), lessThan(300_000)));
+        assertEquals(summary.get(7), 0);
+        assertEquals(summary.get(8), 0);
+        assertThat(summary.get(9), allOf(greaterThan(700_000), lessThan(800_000)));
+
+    }
+
+
+```
+
+[!Diagram](/assets/partition_by_order.png)
+
+Well yes we have - but not a good one for the purpose of evenly distributing load!
+
+There are only two states - meaning only two partitions receive messages. This is a poor partition key
 
 
 
+### a Better choice - customer id 
 
 
+
+this might work really well if your customer's behaviour has a normal distribution.  
+
+In this example I've weighted customer's ordering behaviour to be a bit biased - not every customer places the same amount of orders
+
+
+[!Diagram](/assets/partition_by_order.png)
+
+
+
+### An ideal choice 
+
+in the aggregate, V4 UUIDs are truly random
+
+that means, we don't need to take into account the other biases in our system - the skew towards Pickup or delivery orders, or the fact some customers might be more active than others
+ 
+assuming that - on average, orders go through a normal lifecycle,  & produce a normal 
+
+
+
+[!Diagram](/assets/partition_by_order.png)
 
 
 
 
 ## other effective ways to distribute load
 
-### Round robin paritioning & Vector clocks
+### Round robin partitioning & Vector clocks
 
 
 
