@@ -8,7 +8,7 @@ categories:  Distributed Systems, Kafka, Partitioning
 ## Abstract
 
 In this article, I'll walk through one of the building blocks of the design & development of a highly performant event stream on Apache Kafka. 
-I'll skim over details around event design, data serialisation, security, & schema evolution,
+I'll skip details around event design, log compaction, data serialisation, security, & schema evolution,
 so we can deep dive into the process for selecting a partition strategy, a partition or message key, and then verifying that your choice has the expected distribution
 
 ## Understanding topic partitions in Kafka
@@ -23,8 +23,8 @@ What this means is that if we have a topic of Orders - each partition contains a
 These partitions will be seperated across different brokers in a Kafka cluster. These partitions form the unit of concurrency - the more partitions, the more consumers we can attach,
 & the greater throughput our system can achieve - **assuming an even distribution**
 
-We can write an application where we code in the abstract for the most part - thinking about a stream of business objects, shared via Kafka
-Under the hood, the kafka protocol will ensure ordered delivery within those partitions
+We can write an application where we code in the abstract for the most part - thinking about a stream of objects, shared via Kafka
+Under the hood, the kafka protocol will ensure ordered delivery within those partitions.
 
 
 ## The tradeoff at play
@@ -35,26 +35,40 @@ The cost is that there is no coordination of data between them - meaning no guar
 
 ## Our imaginary scenario
 
-Let's just say we are a system that produces events about orders. 
+Let's just say we are some kind of ecommerce system that takes orders from customers
+When an order goes through its lifecycle, the status changes, & an event is emitted via Kafka
+The comms system subscribes to these events, & sends customers emails 
 
-We know we want this information to be used in multiple places, but a key one is sending email comms to customers about thier order & it's state
+![Diagram](/assets/arch.png)
 
-Let's assume that team has a good handle on how they will that process idempotent, & all they need is a reasonable guarentee around the order messages will arrive in
-TODO doc
+
+Let's assume that the comms team has a good handle on how they will that process  the events in an idempotent, safe, secure manner,
+& all they need is a reasonable guarantee around the order messages will arrive in. 
+
 
 ## The design question -- Do I need to leverage ordering within kafka? 
 
-This is a fundamental property of any event stream - how does order of events factor into the way consumers will read them ? 
-This is a great time to remember that just because a message queue or streaming technology offers a feature, doesn't mean you should use it! 
+This is a fundamental property of any event stream - how does order of events factor into the way consumers will read them ?
 
-As an example, if you were building something that aggregated application logs, & absolute order was never a requirement
-Consider Lamport or Vector clocks - the ordering can be embedded into the message
-Consumers can buffer for the next event, due to the specific happens after semantics
+In our over simplified scenario, lets assume orders can change state in the following ways 
 
-For our purposes, let's rule this out & assume we need to deliver order events to the service that publishes email communications.
-Ideally orders would arrive in the order that they happen, but let's assume our order volume is too high to use a single partition, 
+- When an order is created, it goes on back order
+- When stock is available, an order is shipped
+- When the shipping is complete the order is marked as completed
 
-so we can compromise on limited ordering guarantee - updates for any given order will arrive in order, relative to other updates for the same order
+Let's just say in our scenario, the design choice is made that the comms engine shouldn't need to know about the cause & effect relationship between our events - it should just be able to process them in order & turn them into emails.
+
+Let's also rule out two other options for the purpose of this discussion
+
+- Lamport or Vector clocks - a logical clock that expresses to a consumer that event a happens before event b, without relying on the transport mechanism to keep messages. 
+  - while this is a brilliant option to increase scalability & distribution of data, it forces consumers to implement the event buffer pattern, where if event b arrives before event a, they have to hold & process b until a arrives.
+- A monolog architecture, where absolute ordering is guaranteed
+  - A monolog assumes absolute ordering at a source of truth system. This rules out a lot of architectural choices that might help scaling in the source-of-truth database, & would only allow us to use a single partition on kafka, dramatically limiting our throughput
+
+
+For our purposes, let's assume we need to deliver order events **in order** to the service that publishes email communications, & that we will use Kafka Partitions to guarantee this order.
+
+So we can compromise on limited ordering guarantee - updates for any given order will arrive in order, relative to other updates for the same order
 this means we won't tell a customer that their order has shipped after it's been delivered
 
 
@@ -67,9 +81,7 @@ For a meaningfully sized data set, this might take hours or days - not mention t
 
 One option I've developed this year is the following mechanism of left-shifting partition distribution - if you find a partition key is unsuitable, you can pivot early, 
 
-First of all - we find out how Kafka Calculates partitions by key
-
-https://github.com/apache/kafka/blob/660e6fe8108e8a9b3481ea1ec20327a099dd8310/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java#L1403
+First of all - we find out [how Kafka calculates partitions by key](https://github.com/apache/kafka/blob/660e6fe8108e8a9b3481ea1ec20327a099dd8310/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java#L1403)
 
 
 Fundamentally - we can think of a Kafka topic as a two-dimensional array
@@ -109,7 +121,7 @@ public class MockKafkaTopic {
 }
 
 ```
-And then some code to generate a Mock topic
+And then some code to generate a Mock topic. 
 
 ```java
 public class MockTopicGenerator {
@@ -192,11 +204,9 @@ This might work really well if your customer's behaviour has a normal distributi
 
 In this example I've weighted customer's ordering behaviour to be a bit biased - not every customer places the same amount of orders
 
-This a relatively common theme in the intersection of tech & human behaviour 
-
 - population isn't normally distributed between countries
 - employees aren't  between companies
-- 
+
 
 
 ```java
@@ -206,27 +216,31 @@ This a relatively common theme in the intersection of tech & human behaviour
     @Test
     void slightImprovement() {
 
-        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+            MockOrderFactory mockOrderFactory = getMockOrderFactory();
 
-        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+            Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
 
         MockKafkaTopic mockKafkaTopic = MockTopicGenerator
-                .mockTopic(() -> orders.pop().customerId().toString(), 10, 1_000_000);
+        .mockTopic(() -> orders.pop().customerId().toString(), 10, 1_000_000);
 
         Map<Integer, Integer> summary = mockKafkaTopic.getSummary();
-        
 
-        assertThat(summary.get(0), allOf(greaterThan(70_000), lessThan(80_000)));
-        assertThat(summary.get(1), allOf(greaterThan(130_000), lessThan(140_000)));
-        assertThat(summary.get(2), allOf(greaterThan(70_000), lessThan(80_000)));
-        assertThat(summary.get(3), allOf(greaterThan(30_000), lessThan(40_000)));
-        assertThat(summary.get(4), allOf(greaterThan(60_000), lessThan(80_000)));
+
+
+        assertThat(summary.get(0), allOf(greaterThan(45_000), lessThan(65_000)));
+        assertThat(summary.get(1), allOf(greaterThan(145_000), lessThan(160_000)));
+        assertThat(summary.get(2), allOf(greaterThan(85_000), lessThan(100_000)));
+        assertThat(summary.get(3), allOf(greaterThan(38_000), lessThan(45_000)));
+        assertThat(summary.get(4), allOf(greaterThan(110_00), lessThan(130_000)));
         assertThat(summary.get(5), allOf(greaterThan(130_000), lessThan(180_000)));
-        assertThat(summary.get(6), allOf(greaterThan(150_000), lessThan(200_000)));
-        assertThat(summary.get(7), allOf(greaterThan(55_000), lessThan(85_000)));
-        assertThat(summary.get(8), allOf(greaterThan(70_000), lessThan(80_000)));
-        assertThat(summary.get(9), allOf(greaterThan(130_000), lessThan(140_000)));
+        assertThat(summary.get(6), allOf(greaterThan(55_000), lessThan(65_000)));
+        assertThat(summary.get(7), allOf(greaterThan(90_000), lessThan(115_000)));
+        assertThat(summary.get(8), allOf(greaterThan(120_000), lessThan(150_000)));
+        assertThat(summary.get(9), allOf(greaterThan(85_000), lessThan(100_000)));
 
+
+
+        }
 
 ```
 
@@ -240,19 +254,19 @@ So even with a randomly generated Customer id - we still ended up with skewed pa
 
 That means, we don't need to take into account the other biases in our system - the skew towards Pickup or delivery orders, or the fact some customers might be more active than others
  
-assuming that - on average,orders go through a normal lifecycle, & produce a normal amount of state changes 
+assuming that - on average,orders go through a normal lifecycle, & produce a normal amount of state changes - we might get something like this
 
 
 ```java
 
-@DisplayName("An ideal partition Key")
-@Test
+    @DisplayName("An ideal partition Key")
+    @Test
     void idealKey() {
 
 
-        MockOrderFactory mockOrderFactory = getMockOrderFactory();
+    MockOrderFactory mockOrderFactory = getMockOrderFactory();
 
-        Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
+    Stack<Order> orders = mockOrderFactory.generateWeightedOrders(1_000_000);
 
         MockKafkaTopic mockKafkaTopic = MockTopicGenerator
         .mockTopic(() -> orders.pop().orderId().toString(), 10, 1_000_000);
@@ -283,10 +297,15 @@ assuming that - on average,orders go through a normal lifecycle, & produce a nor
 
 
 
-## other effective ways to distribute load
 
-### Round robin partitioning & Vector clocks
+# Summary
 
+
+Thanks for getting this far
+In this article, I hope you've gained an appreciation for the technical challenges that go into leveraging the power of a distributed system like Kafka, 
+while maintaining a balance between competing business & technical requirements. 
+
+I've included some rough [source code](https://github.com/petebids/kafka-partition-test/tree/main) that made up the bulk of this article to help get you started 
 
 
 
