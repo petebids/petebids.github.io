@@ -207,8 +207,10 @@ This might work really well if your customer's behaviour has a normal distributi
 
 In this example I've weighted customer's ordering behaviour to be a bit biased - not every customer places the same amount of orders
 
+In my experience, this is reflective of a lot of real world examples that might make intuitive partition keys:
+
 - population isn't normally distributed between countries
-- employees aren't  between companies
+- employees aren't between companies
 
 
 
